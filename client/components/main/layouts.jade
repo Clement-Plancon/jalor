@@ -15,22 +15,31 @@ template(name="main")
       link(rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png")
       link(rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png")
       link(rel="manifest" crossOrigin="use-credentials" href="/site.webmanifest")
-      link(rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5")
-      meta(name="apple-mobile-web-app-title" content="Wekan")
-      meta(name="application-name" content="Wekan")
-      meta(name="msapplication-TileColor" content="#00aba9")
-      meta(name="theme-color" content="#ffffff")
+      link(rel="icon" type="image/svg+xml" href="/jalor-mark.svg")
+      link(rel="mask-icon" href="/jalor-pinned-tab.svg" color="#000091")
+      meta(name="apple-mobile-web-app-title" content="Jalor")
+      meta(name="application-name" content="Jalor")
+      //- Bleu France (#000091), the DSFR's primary. It is what a browser paints
+        its address bar and a phone its task switcher with, so it is the first
+        piece of Jalor identity anybody sees, before the page has loaded.
+      meta(name="msapplication-TileColor" content="#000091")
+      meta(name="theme-color" content="#000091")
       //link(rel="stylesheet" type="text/css" class="__meteor-css__" href="css/html5-default-theme.css")
 
 template(name="userFormsLayout")
   +recoveryMaintenance
   section.auth-layout
+    //- `div`, not `h1`. This element carries no text - it is the box the logo
+      sits in, and upstream marked it up as a heading - so it was rendering an
+      EMPTY level-one heading above the real one. A screen reader announces
+      "heading level 1" and then nothing, and the page had two h1s. The class
+      stays, because that is what userForm.css sizes.
     if currentSetting.hideLogo
-      h1.at-form-landing-logo
+      div.at-form-landing-logo
         br
         br
     unless currentSetting.hideLogo
-      h1.at-form-landing-logo
+      div.at-form-landing-logo
       if currentSetting.customLoginLogoImageUrl
         if currentSetting.customLoginLogoLinkUrl
           a(href="{{currentSetting.customLoginLogoLinkUrl}}")
@@ -40,8 +49,17 @@ template(name="userFormsLayout")
           img(src="{{currentSetting.customLoginLogoImageUrl}}" alt="{{currentSetting.productName}}" width="300" height="auto")
           br
       else
-        img(src="{{pathFor '/wekan-logo.svg'}}" alt="" width="300" height="auto")
-        br
+        //- The Jalor masthead, when the instance has not been given a logo of
+          its own. The mark, the product name as the page's ONE h1, and the
+          tagline under it - which is what the sign-in page of a public service
+          is expected to say before it asks for anything.
+          The mark is `alt=""` and `aria-hidden`: it is decoration beside the
+          name, and a screen reader reading "Jalor" twice is worse than not
+          describing it at all (RGAA 1.2).
+        .jalor-auth-brand
+          img.jalor-auth-logo(src="{{pathFor '/jalor-mark.svg'}}" alt="" aria-hidden="true" width="88" height="88")
+          h1.jalor-auth-name {{productName}}
+          p.jalor-auth-tagline {{_ 'jalor-tagline'}}
   if currentSetting.textBelowCustomLoginLogo
     hr
     section.textBelowCustomLoginLogo
@@ -54,7 +72,13 @@ template(name="userFormsLayout")
         +loader
       else
         // ARIA live region for error messages
-        div#login-error-message(role="alert" aria-live="assertive" style="color: #d32f2f; margin-bottom: 1em;")
+        //- The live region the sign-in code writes failures into. The colour
+          and the spacing used to be an inline `style`, which is the one place
+          a stylesheet cannot reach: the DSFR error treatment in
+          client/jalor/jalor-auth.css draws it now - a red leading rule, a
+          tinted ground and red text - and it only draws when the region has
+          something in it, so an empty alert is not an empty red box.
+        div#login-error-message(role="alert" aria-live="assertive")
         +Template.dynamic(template=content)
         if currentSetting.displayAuthenticationMethod
           +connectionMethod(authenticationMethod=currentSetting.defaultAuthenticationMethod)
@@ -121,11 +145,17 @@ template(name="defaultLayout")
 template(name="notFound")
   +message(label='page-not-found')
 
+//- "Not found", "this board is private", and every other page that has one
+  thing to say. A real DSFR callout - `fr-callout` with its title and text -
+  rather than WeKan's `.big-message`, which was a centred grey paragraph with
+  no shape of its own. The class it replaced was used here and nowhere else,
+  so its rules went from layouts.css with it.
 template(name="message")
-  .big-message.quiet(class=color)
-    h1 {{_ label}}
-    unless currentUser
-      p {{{_ 'page-maybe-private' '/sign-in'}}}
+  .jalor-page
+    .fr-callout(class=color)
+      h1.fr-callout__title {{_ label}}
+      unless currentUser
+        p.fr-callout__text {{{_ 'page-maybe-private' '/sign-in'}}}
 
 template(name="loader")
   h1.loadingText {{_ 'loading'}}
